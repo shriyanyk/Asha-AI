@@ -9,7 +9,7 @@
 
 /* Left side with animated gradient background */
 .login-left {
-  flex: 1.9;
+  flex: 1.5;
   background: linear-gradient(-45deg, #9539b1, #6e48aa, #29db2f, #5cdd8b);
   background-size: 400% 400%;
   animation: gradient-animation 15s ease infinite;
