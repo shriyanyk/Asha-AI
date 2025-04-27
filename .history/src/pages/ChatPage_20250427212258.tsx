@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import '../styles/Chatpage.css';
+import '<div styleName={} />
+<styles />
+<ChatPage></ChatPage>.css';
 import { BiasMitigationService } from '../services/BiasMitigationService';
 import { InputValidationService } from '../services/InputValidationService';
 
