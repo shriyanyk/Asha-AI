@@ -184,7 +184,7 @@ Roles: ${selectedRoleNames.join(', ')}
 Please provide a casual, conversational response about suitable job opportunities. 
 Focus on being friendly and approachable in your tone.
 Highlight 3-4 suitable roles with brief information on:
-- Typical responsibilities (3-4 sentences only)
+- Typical responsibilities ( sentences only)
 - Average salary range (just the numbers)
 - 2-3 most important skills
 
