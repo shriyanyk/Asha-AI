@@ -45,7 +45,7 @@ const ChatPage: React.FC = () => {
   const [showSkillsDropdown, setShowSkillsDropdown] = useState(false);
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
-  const [, setUserIsLookingForJob] = useState(false);
+  const [setUserIsLookingForJob] = useState(false);
   
   // Skills and roles options
   const availableSkills: Skill[] = [
