@@ -176,21 +176,20 @@ Selected Roles: ${selectedRoleNames.join(', ')}`;
     
     setLoading(true);
     
-    // Generate a more conversational prompt for the API
+    // Generate a prompt for the API that includes the selected skills and roles
     const jobSearchPrompt = `Based on the user's selections:
 Skills: ${selectedSkillNames.join(', ')}
 Roles: ${selectedRoleNames.join(', ')}
 
-Please provide a casual, conversational response about suitable job opportunities. 
-Focus on being friendly and approachable in your tone.
-Highlight 3-4 suitable roles with brief information on:
-- Typical responsibilities (1-2 sentences only)
-- Average salary range (just the numbers)
-- 2-3 most important skills
+Please provide a systematic breakdown of suitable job opportunities and internships. Format the response with clear headings for each role category, and under each category list 3-5 specific job titles with:
+1. Required skills
+2. Typical responsibilities
+3. Potential career path
+4. Average salary range
+5. Tips for landing this position
+leave 
 
-Keep your response short and conversational, as if you're having a friendly chat.
-Avoid bullet points, headers, and formatting that looks too formal.
-End with a simple question about whether they'd like more specific information.`;
+Also include a section on recommended learning paths to improve skills for these roles.`;
 
     try {
       const response = await fetch(
@@ -223,13 +222,14 @@ End with a simple question about whether they'd like more specific information.`
       
       // Remove markdown formatting if needed
       geminiReply = geminiReply.replace(/\*{1,2}([^*]+)\*{1,2}/g, "$1"); 
-      geminiReply = geminiReply.replace(/#{1,3}\s+/g, "");
-      geminiReply = geminiReply.replace(/---/g, "");
+
+      // Format the response to be more structured and concise
+      const formattedResponse = formatJobOpportunities(geminiReply);
       
       setTimeout(() => {
         setMessages(prev => [...prev, { 
           sender: 'bot', 
-          text: geminiReply,
+          text: formattedResponse,
           timestamp: new Date()
         }]);
         setLoading(false);
@@ -250,6 +250,84 @@ End with a simple question about whether they'd like more specific information.`
       }]);
       setLoading(false);
     }
+  };
+
+  // Improved function to format job opportunities in a more concise and structured way
+  const formatJobOpportunities = (text: string): string => {
+    // First, let's extract the main sections and trim them down
+    const mainSections = text.split(/(?=\b[IVX]+\.\s+[A-Z])/);
+    
+    // Keep only the role sections (typically sections I-V) and the learning paths
+    const roleSections = mainSections.filter(section => 
+      /^[IVX]+\.\s+(Backend|Frontend|Mobile|Product|Site Reliability)/i.test(section.trim())
+    );
+    
+    const learningSection = mainSections.find(section => 
+      /Recommended Learning Paths/i.test(section)
+    );
+    
+    let result = "";
+    
+    // Format each role section to be more concise
+    roleSections.forEach(section => {
+      const lines = section.split('\n');
+      const titleLine = lines[0].trim();
+      
+      // Add the title
+      result += `### ${titleLine}\n\n`;
+      
+      // Extract the required skills
+      const skillsLine = lines.find(line => /Required Skills/i.test(line));
+      if (skillsLine) {
+        result += `**${skillsLine.trim()}**\n\n`;
+      }
+      
+      // Extract the salary range
+      const salaryLine = lines.find(line => /Average Salary Range/i.test(line));
+      if (salaryLine) {
+        result += `**${salaryLine.trim()}**\n\n`;
+      }
+      
+      // Find the "Specific Job Titles" subsection
+      const jobTitlesIndex = lines.findIndex(line => /Specific Job Titles/i.test(line));
+      
+      if (jobTitlesIndex > 0) {
+        // Add job titles in a more compact format
+        result += "**Job Titles:** ";
+        
+        // Extract job titles (numbered items following "Specific Job Titles")
+        const jobTitles = [];
+        for (let i = jobTitlesIndex + 1; i < lines.length; i++) {
+          const match = lines[i].match(/\d+\.\s+([^:]+):/);
+          if (match) {
+            jobTitles.push(match[1].trim());
+          } else if (lines[i].trim() === "" && jobTitles.length > 0) {
+            break; // End of job titles section
+          }
+        }
+        
+        result += jobTitles.join(", ") + "\n\n";
+      }
+      
+      // Add a short separator
+      result += "---\n\n";
+    });
+    
+    // Add a condensed version of the learning paths section
+    if (learningSection) {
+      result += "### Recommended Learning Paths\n\n";
+      
+      // Extract key learning paths without the details
+      const pathMatches = learningSection.match(/([A-Za-z]+ Development|Product Management|Site Reliability Engineering):/g);
+      
+      if (pathMatches) {
+        pathMatches.forEach(match => {
+          result += `- **${match.replace(":", "")}**\n`;
+        });
+      }
+    }
+    
+    return result;
   };
 
   const handleSend = async (e: React.FormEvent) => {
@@ -322,8 +400,8 @@ End with a simple question about whether they'd like more specific information.`
       return;
     }
 
-    // Create modified prompt that encourages more conversational responses
-    const enhancedPrompt = createConversationalPrompt(name, age, safeInput);
+    // Use the enhanced prompt with bias mitigation guidelines and guardrails
+    const enhancedPrompt = biasMitigationService.current.createEnhancedPrompt(name, age, safeInput);
 
     try {
       const response = await fetch(
@@ -358,8 +436,6 @@ End with a simple question about whether they'd like more specific information.`
       
       // Remove markdown formatting
       geminiReply = geminiReply.replace(/\*{1,2}([^*]+)\*{1,2}/g, "$1"); 
-      geminiReply = geminiReply.replace(/#{1,3}\s+/g, "");
-      geminiReply = geminiReply.replace(/---/g, "");
       
       // Apply post-processing to check and correct bias and guardrails in the AI response
       const processedResult = biasMitigationService.current.postProcessResponse(geminiReply);
@@ -402,25 +478,6 @@ End with a simple question about whether they'd like more specific information.`
       }]);
       setLoading(false);
     }
-  };
-
-  // New function to create conversational prompts
-  const createConversationalPrompt = (name: string, age: number, userInput: string): string => {
-    return `You are Asha AI, a helpful and friendly career assistant talking to ${name} who is ${age} years old. 
-    
-The user asked: "${userInput}"
-
-Please respond to this question with the following guidelines:
-1. Keep your response casual and conversational, like you're chatting with a friend
-2. Limit your response to 3-4 sentences maximum for simple questions
-3. For complex questions, use at most 2-3 short paragraphs
-4. Avoid bullet points, numbered lists, and formal headings
-5. Don't use markdown formatting
-6. Be warm and personable, but direct and concise
-7. Focus on giving practical, actionable advice when appropriate
-8. End with a simple question to continue the conversation naturally
-
-Remember to remain balanced, inclusive, and supportive in your career guidance.`;
   };
 
   return (
