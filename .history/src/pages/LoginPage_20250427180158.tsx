@@ -15,18 +15,12 @@ interface GoogleUser {
   picture: string;
 }
 
-interface UserData extends Partial<GoogleUser> {
-  name: string;
-  age?: number;
-}
-
 const LoginPage = () => {
   const navigate = useNavigate();
   const [name, setName] = useState('');
   const [age, setAge] = useState('');
   const [isGoogleUser, setIsGoogleUser] = useState(false);
   const [error, setError] = useState('');
-  const [googleUserData, setGoogleUserData] = useState<Partial<GoogleUser>>({});
 
   useEffect(() => {
     // Check if already logged in
@@ -36,8 +30,7 @@ const LoginPage = () => {
         const user = JSON.parse(storedUser);
         if (user.name) {
           setName(user.name);
-          setGoogleUserData(user);
-          setIsGoogleUser(!!user.email && !!user.picture); // Only set as Google user if it has Google-specific fields
+          setIsGoogleUser(true);
         }
       } catch (e) {
         console.error("Error parsing stored user data:", e);
@@ -64,16 +57,9 @@ const LoginPage = () => {
       const userObject = jwtDecode<GoogleUser>(response.credential);
       console.log("Google login successful:", userObject);
 
-      setGoogleUserData(userObject);
+      localStorage.setItem('user', JSON.stringify(userObject));
       setName(userObject.name);
       setIsGoogleUser(true);
-      
-      // Store without overriding the name
-      localStorage.setItem('user', JSON.stringify({
-        email: userObject.email,
-        picture: userObject.picture,
-        name: userObject.name
-      }));
     } catch (e) {
       console.error("Error processing Google response:", e);
       setError("Failed to process Google login. Please try again.");
@@ -101,8 +87,8 @@ const LoginPage = () => {
     }
 
     // Store user info
-    const userData: UserData = isGoogleUser 
-      ? { ...googleUserData, name: name } // Use current name, not Google name
+    const userData = isGoogleUser 
+      ? JSON.parse(localStorage.getItem('user') || '{}')
       : { name, email: '', picture: '' };
       
     userData.age = ageNum;
@@ -115,14 +101,6 @@ const LoginPage = () => {
       state: { name, age: ageNum },
       replace: true 
     });
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem('user');
-    setName('');
-    setAge('');
-    setIsGoogleUser(false);
-    setGoogleUserData({});
   };
 
   return (
@@ -147,6 +125,7 @@ const LoginPage = () => {
             placeholder="Enter your name"
             value={name}
             onChange={(e) => setName(e.target.value)}
+            disabled={isGoogleUser}
             required
           />
 
@@ -165,15 +144,10 @@ const LoginPage = () => {
           <button type="submit">Continue</button>
         </form>
 
-        {!isGoogleUser ? (
+        {!isGoogleUser && (
           <div className="google-login">
             <p>or</p>
             <div id="googleSignInDiv"></div>
-          </div>
-        ) : (
-          <div className="logout-section">
-            <p>Connected with Google</p>
-            <button onClick={handleLogout} className="logout-button">Logout</button>
           </div>
         )}
       </div>

@@ -15,11 +15,6 @@ interface GoogleUser {
   picture: string;
 }
 
-interface UserData extends Partial<GoogleUser> {
-  name: string;
-  age?: number;
-}
-
 const LoginPage = () => {
   const navigate = useNavigate();
   const [name, setName] = useState('');
@@ -101,7 +96,7 @@ const LoginPage = () => {
     }
 
     // Store user info
-    const userData: UserData = isGoogleUser 
+    const userData = isGoogleUser 
       ? { ...googleUserData, name: name } // Use current name, not Google name
       : { name, email: '', picture: '' };
       

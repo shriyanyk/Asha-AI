@@ -15,11 +15,6 @@ interface GoogleUser {
   picture: string;
 }
 
-interface UserData extends Partial<GoogleUser> {
-  name: string;
-  age?: number;
-}
-
 const LoginPage = () => {
   const navigate = useNavigate();
   const [name, setName] = useState('');
@@ -101,7 +96,7 @@ const LoginPage = () => {
     }
 
     // Store user info
-    const userData: UserData = isGoogleUser 
+    const userData = isGoogleUser 
       ? { ...googleUserData, name: name } // Use current name, not Google name
       : { name, email: '', picture: '' };
       
@@ -112,7 +107,7 @@ const LoginPage = () => {
     
     // Use replace instead of push to avoid back button issues
     navigate('/chat', { 
-      state: { name, age: ageNum },
+      state: { name, age: ageNum },AV
       replace: true 
     });
   };
